@@ -1,39 +1,31 @@
+// FileTransferController.cs
 using Microsoft.AspNetCore.Mvc;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
-namespace Server_3.Controllers
+[ApiController]
+[Route("[controller]")]
+public class FileTransferController : ControllerBase
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class WeatherForecastController : ControllerBase
+    [HttpPost]
+    public async Task<IActionResult> UploadFile()
     {
-        private static readonly string[] Summaries = new[]
+        try
         {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
+            var file = Request.Form.Files[0];
+            var filePath = Path.Combine(Directory.GetCurrentDirectory(), "uploads", file.FileName);
 
-        private readonly ILogger<WeatherForecastController> _logger;
-
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
-        {
-            _logger = logger;
-        }
-
-        [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
-        {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+            using (var stream = new FileStream(filePath, FileMode.Create))
             {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
-        }
+                await file.CopyToAsync(stream);
+            }
 
-        [HttpGet]
-        public IActionResult GetServise()
+            return Ok($"File {file.FileName} uploaded successfully.");
+        }
+        catch (Exception ex)
         {
-            return Ok("Привет, это веб-сервис 3!");
+            return StatusCode(500, $"Internal server error: {ex.Message}");
         }
     }
 }
